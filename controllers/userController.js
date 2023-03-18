@@ -89,7 +89,7 @@ const unfollow = async (req, resp) => {
   let user1 = await userModel.findOne({ _id: userId1 });
   if (!user1) {
     resp.status(404).send({
-      message: "The user you're trying to follow doesn't exist",
+      message: "The user you're trying to unfollow doesn't exist",
     });
   } else {
     let user2 = await userModel.findOne({ _id: userId2 });
