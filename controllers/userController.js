@@ -6,6 +6,7 @@ const followersModel = require("../models/followersModel");
 
 const login = async (req, resp) => {
   console.log("Inside Login");
+  console.log(process.env.ACCESS_TOKEN_SECRET);
   const user = await userModel.findOne({ Email: req.body.Email });
   if (user) {
     if (req.body.Password === user.Password) {
