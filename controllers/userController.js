@@ -25,12 +25,12 @@ const login = async (req, resp) => {
         }
       );
     } else {
-      resp.status(400).send({
+      resp.status(401).send({
         message: "Password not matched",
       });
     }
   } else {
-    resp.status(400).send({
+    resp.status(404).send({
       message: "User not found",
     });
   }
@@ -41,38 +41,44 @@ const follow = async (req, resp) => {
   let userId1 = req.params.id;
   let userId2 = req.user.data._id;
   let user1 = await userModel.findOne({ _id: userId1 });
-  let user2 = await userModel.findOne({ _id: userId2 });
-  if (userId1 === userId2) {
-    resp.status(400).send({
-      message: "You can't follow yourself",
+  if (!user1) {
+    resp.status(404).send({
+      message: "The user you're trying to follow doesn't exist",
     });
   } else {
-    let followerData = await followersModel.findOne({
-      $and: [{ followerId: userId2 }, { followingId: userId1 }],
-    });
-    if (followerData) {
+    let user2 = await userModel.findOne({ _id: userId2 });
+    if (userId1 === userId2) {
       resp.status(400).send({
-        message: "You already follow this user",
+        message: "You can't follow yourself",
       });
     } else {
-      let followers = new followersModel({
-        followerId: userId2,
-        followingId: userId1,
+      let followerData = await followersModel.findOne({
+        $and: [{ followerId: userId2 }, { followingId: userId1 }],
       });
-      let result = await followers.save();
-      let newFollowers = user1.Followers + 1;
-      let data = await userModel.updateOne(
-        { _id: userId1 },
-        { $set: { Followers: newFollowers } }
-      );
-      let newFollowings = user2.Followings + 1;
-      let data2 = await userModel.updateOne(
-        { _id: userId2 },
-        { $set: { Followings: newFollowings } }
-      );
-      resp.status(200).send({
-        message: "You have followed this user",
-      });
+      if (followerData) {
+        resp.status(400).send({
+          message: "You already follow this user",
+        });
+      } else {
+        let followers = new followersModel({
+          followerId: userId2,
+          followingId: userId1,
+        });
+        let result = await followers.save();
+        let newFollowers = user1.Followers + 1;
+        let data = await userModel.updateOne(
+          { _id: userId1 },
+          { $set: { Followers: newFollowers } }
+        );
+        let newFollowings = user2.Followings + 1;
+        let data2 = await userModel.updateOne(
+          { _id: userId2 },
+          { $set: { Followings: newFollowings } }
+        );
+        resp.status(200).send({
+          message: "You have followed this user",
+        });
+      }
     }
   }
 };
