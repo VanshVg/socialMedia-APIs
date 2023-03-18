@@ -87,36 +87,42 @@ const unfollow = async (req, resp) => {
   let userId1 = req.params.id;
   let userId2 = req.user.data._id;
   let user1 = await userModel.findOne({ _id: userId1 });
-  let user2 = await userModel.findOne({ _id: userId2 });
-  if (userId1 === userId2) {
-    resp.status(400).send({
-      message: "You can't unfollow yourself",
+  if (!user1) {
+    resp.status(404).send({
+      message: "The user you're trying to follow doesn't exist",
     });
   } else {
-    let followerData = await followersModel.findOne({
-      $and: [{ followerId: userId2 }, { followingId: userId1 }],
-    });
-    if (!followerData) {
+    let user2 = await userModel.findOne({ _id: userId2 });
+    if (userId1 === userId2) {
       resp.status(400).send({
-        message: "You don't follow this user",
+        message: "You can't unfollow yourself",
       });
     } else {
-      let removeFollower = await followersModel.deleteOne({
+      let followerData = await followersModel.findOne({
         $and: [{ followerId: userId2 }, { followingId: userId1 }],
       });
-      let newFollowers = user1.Followers - 1;
-      let data = await userModel.updateOne(
-        { _id: userId1 },
-        { $set: { Followers: newFollowers } }
-      );
-      let newFollowings = user2.Followings - 1;
-      let data2 = await userModel.updateOne(
-        { _id: userId2 },
-        { $set: { Followings: newFollowings } }
-      );
-      resp.status(200).send({
-        message: "You have unfollowed this user",
-      });
+      if (!followerData) {
+        resp.status(400).send({
+          message: "You don't follow this user",
+        });
+      } else {
+        let removeFollower = await followersModel.deleteOne({
+          $and: [{ followerId: userId2 }, { followingId: userId1 }],
+        });
+        let newFollowers = user1.Followers - 1;
+        let data = await userModel.updateOne(
+          { _id: userId1 },
+          { $set: { Followers: newFollowers } }
+        );
+        let newFollowings = user2.Followings - 1;
+        let data2 = await userModel.updateOne(
+          { _id: userId2 },
+          { $set: { Followings: newFollowings } }
+        );
+        resp.status(200).send({
+          message: "You have unfollowed this user",
+        });
+      }
     }
   }
 };
@@ -129,7 +135,6 @@ const userProfile = async (req, resp) => {
     Followers: data.Followers,
     Followings: data.Followings,
   });
-  console.log(data);
 };
 
 module.exports = { login, follow, unfollow, userProfile };

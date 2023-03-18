@@ -112,14 +112,20 @@ const unlike = async (req, resp) => {
 const showPost = async (req, resp) => {
   let postId = req.params.id;
   let data = await postModel.findOne({ postId: postId });
-  let commentsNumber = data.comments.length;
-  console.log(commentsNumber);
-  resp.status(200).send({
-    title: data.title,
-    desc: data.desc,
-    commentsNumber: commentsNumber,
-    likes: data.likes,
-  });
+  if (!data) {
+    resp.status(404).send({
+      message: "Post you're looking for doesn't exist",
+    });
+  } else {
+    let commentsNumber = data.comments.length;
+    console.log(commentsNumber);
+    resp.status(200).send({
+      title: data.title,
+      desc: data.desc,
+      commentsNumber: commentsNumber,
+      likes: data.likes,
+    });
+  }
 };
 
 const showAllPosts = async (req, resp) => {
