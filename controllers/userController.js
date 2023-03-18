@@ -5,6 +5,7 @@ const userModel = require("../models/userModel");
 const followersModel = require("../models/followersModel");
 
 const login = async (req, resp) => {
+  console.log("Inside Login");
   const user = await userModel.findOne({ Email: req.body.Email });
   if (user) {
     if (req.body.Password === user.Password) {
@@ -35,6 +36,7 @@ const login = async (req, resp) => {
 };
 
 const follow = async (req, resp) => {
+  console.log("Inside follow");
   let userId1 = req.params.id;
   let userId2 = req.user.data._id;
   let user1 = await userModel.findOne({ _id: userId1 });

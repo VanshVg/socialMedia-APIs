@@ -1,6 +1,14 @@
 const express = require("express");
 require("./config/db");
 const routes = require("./routes/routes");
+const mongoose = require("mongoose");
+
+mongoose.connection.once("open", function () {
+  console.log("Mongodb is connected");
+});
+mongoose.connection.on("disconnected", function () {
+  console.log("Mongodb is disconnected");
+});
 
 const app = express();
 
