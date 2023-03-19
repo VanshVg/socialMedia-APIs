@@ -12,4 +12,4 @@ COPY . .
 
 EXPOSE 10000
 
-RUN npm run app
+CMD ["node", "index.js"]
