@@ -6,7 +6,6 @@ let verifyToken = async (req, resp, next) => {
     resp.status(403).send({
       message: "Token Required",
     });
-    console.log("Token Required");
   } else {
     let token = req.headers.authorization.split(" ")[1];
     jwt.verify(
@@ -17,10 +16,8 @@ let verifyToken = async (req, resp, next) => {
           resp.status(401).send({
             message: "Invalid Token",
           });
-          console.log("Invalid Token");
         } else {
           req.user = decoded;
-          //   console.log(req.user);
           next();
         }
       }

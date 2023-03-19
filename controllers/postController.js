@@ -3,31 +3,34 @@ const likeModel = require("../models/likesModel");
 const { v4: uuidv4 } = require("uuid");
 
 const post = async (req, resp) => {
-  let userId = req.user.data._id;
+  let userId = req.user.data.userId;
   let cTime = new Date().toUTCString();
   let newPostId = uuidv4();
-  let data = new postModel({
-    postId: newPostId,
-    userId: userId,
-    title: req.body.title,
-    desc: req.body.description,
-    created_at: cTime,
-    likes: 0,
-  });
-  console.log(`comments: ${req.body.comments}`);
-  let result = await data.save();
-  resp.status(200).send({
-    PostID: newPostId,
-    title: req.body.title,
-    description: req.body.description,
-    CreatedTime: cTime,
-  });
-  console.log({ result });
+  if (!req.body.title || !req.body.description) {
+    resp.status(400).send({
+      Error: "Field is missing",
+    });
+  } else {
+    let data = new postModel({
+      postId: newPostId,
+      userId: userId,
+      title: req.body.title,
+      desc: req.body.description,
+      created_at: cTime,
+      likes: 0,
+    });
+    let result = await data.save();
+    resp.status(200).send({
+      PostID: newPostId,
+      title: req.body.title,
+      description: req.body.description,
+      CreatedTime: cTime,
+    });
+  }
 };
 
 const deletePost = async (req, resp) => {
   let postId = req.params.id;
-  console.log(postId);
   let postData = await postModel.findOne({ postId: postId });
   if (!postData) {
     resp.status(400).send({
@@ -43,11 +46,11 @@ const deletePost = async (req, resp) => {
 
 const like = async (req, resp) => {
   let postId = req.params.id;
-  let userId = req.user.data._id;
+  let userId = req.user.data.userId;
   let postData = await postModel.findOne({ postId: postId });
   if (!postData) {
     resp.status(400).send({
-      message: "The post you are trying to like doesn't exist",
+      message: "Post not found",
     });
   } else {
     let likesData = await likeModel.findOne({
@@ -78,11 +81,11 @@ const like = async (req, resp) => {
 
 const unlike = async (req, resp) => {
   let postId = req.params.id;
-  let userId = req.user.data._id;
+  let userId = req.user.data.userId;
   let postData = await postModel.findOne({ postId: postId });
   if (!postData) {
     resp.status(400).send({
-      message: "The post you are trying to unlike doesn't exist",
+      message: "Post not found",
     });
   } else {
     let likesData = await likeModel.findOne({
@@ -114,11 +117,10 @@ const showPost = async (req, resp) => {
   let data = await postModel.findOne({ postId: postId });
   if (!data) {
     resp.status(404).send({
-      message: "Post you're looking for doesn't exist",
+      message: "Post not found",
     });
   } else {
     let commentsNumber = data.comments.length;
-    console.log(commentsNumber);
     resp.status(200).send({
       title: data.title,
       desc: data.desc,
@@ -129,19 +131,25 @@ const showPost = async (req, resp) => {
 };
 
 const showAllPosts = async (req, resp) => {
-  let userId = req.user.data._id;
+  let userId = req.user.data.userId;
   let posts = await postModel.find({ userId: userId });
-  posts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  resp.status(200).send(
-    posts.map((posts) => ({
-      postId: posts.postId,
-      title: posts.title,
-      description: posts.desc,
-      created_at: posts.created_at,
-      comments: posts.comments,
-      likes: posts.likes,
-    }))
-  );
+  if (posts.length == 0) {
+    resp.status(404).send({
+      message: "This user hasn't posted anything",
+    });
+  } else {
+    posts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    resp.status(200).send(
+      posts.map((posts) => ({
+        postId: posts.postId,
+        title: posts.title,
+        description: posts.desc,
+        created_at: posts.created_at,
+        comments: posts.comments,
+        likes: posts.likes,
+      }))
+    );
+  }
 };
 
 module.exports = { post, deletePost, like, unlike, showPost, showAllPosts };

@@ -1,12 +1,11 @@
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const { v4: uuidv4 } = require("uuid");
 
 const userModel = require("../models/userModel");
 const followersModel = require("../models/followersModel");
 
 const login = async (req, resp) => {
-  console.log("Inside Login");
-  console.log(process.env.ACCESS_TOKEN_SECRET);
   const user = await userModel.findOne({ Email: req.body.Email });
   if (user) {
     if (req.body.Password === user.Password) {
@@ -20,7 +19,7 @@ const login = async (req, resp) => {
             resp.status(200).send({
               token: token,
             });
-            console.log({ token: token });
+            console.log(token);
           }
         }
       );
@@ -37,16 +36,15 @@ const login = async (req, resp) => {
 };
 
 const follow = async (req, resp) => {
-  console.log("Inside follow");
   let userId1 = req.params.id;
-  let userId2 = req.user.data._id;
-  let user1 = await userModel.findOne({ _id: userId1 });
+  let userId2 = req.user.data.userId;
+  let user1 = await userModel.findOne({ userId: userId1 });
   if (!user1) {
     resp.status(404).send({
-      message: "The user you're trying to follow doesn't exist",
+      message: "User not found",
     });
   } else {
-    let user2 = await userModel.findOne({ _id: userId2 });
+    let user2 = await userModel.findOne({ userId: userId2 });
     if (userId1 === userId2) {
       resp.status(400).send({
         message: "You can't follow yourself",
@@ -67,12 +65,12 @@ const follow = async (req, resp) => {
         let result = await followers.save();
         let newFollowers = user1.Followers + 1;
         let data = await userModel.updateOne(
-          { _id: userId1 },
+          { userId: userId1 },
           { $set: { Followers: newFollowers } }
         );
         let newFollowings = user2.Followings + 1;
         let data2 = await userModel.updateOne(
-          { _id: userId2 },
+          { userId: userId2 },
           { $set: { Followings: newFollowings } }
         );
         resp.status(200).send({
@@ -85,14 +83,14 @@ const follow = async (req, resp) => {
 
 const unfollow = async (req, resp) => {
   let userId1 = req.params.id;
-  let userId2 = req.user.data._id;
-  let user1 = await userModel.findOne({ _id: userId1 });
+  let userId2 = req.user.data.userId;
+  let user1 = await userModel.findOne({ userId: userId1 });
   if (!user1) {
     resp.status(404).send({
-      message: "The user you're trying to unfollow doesn't exist",
+      message: "User not found",
     });
   } else {
-    let user2 = await userModel.findOne({ _id: userId2 });
+    let user2 = await userModel.findOne({ userId: userId2 });
     if (userId1 === userId2) {
       resp.status(400).send({
         message: "You can't unfollow yourself",
@@ -101,7 +99,7 @@ const unfollow = async (req, resp) => {
       let followerData = await followersModel.findOne({
         $and: [{ followerId: userId2 }, { followingId: userId1 }],
       });
-      if (!followerData) {
+      if (!followerData || user1.Followers == 0) {
         resp.status(400).send({
           message: "You don't follow this user",
         });
@@ -111,12 +109,12 @@ const unfollow = async (req, resp) => {
         });
         let newFollowers = user1.Followers - 1;
         let data = await userModel.updateOne(
-          { _id: userId1 },
+          { userId: userId1 },
           { $set: { Followers: newFollowers } }
         );
         let newFollowings = user2.Followings - 1;
         let data2 = await userModel.updateOne(
-          { _id: userId2 },
+          { userId: userId2 },
           { $set: { Followings: newFollowings } }
         );
         resp.status(200).send({
