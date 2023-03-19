@@ -12,4 +12,4 @@ COPY . .
 
 EXPOSE 10000
 
-CMD ["npm", "run", "app"]
+RUN npm run app
