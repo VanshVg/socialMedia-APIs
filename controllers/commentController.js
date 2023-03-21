@@ -3,16 +3,15 @@ const commentModel = require("../models/commentModel");
 const postModel = require("../models/postModel");
 
 const addComment = async (req, resp) => {
-  let postId = req.params.id;
-  let postData = await postModel.findOne({ postId: postId });
-  if (!postData) {
-    resp.status(400).send({
-      message: "Post not found",
-    });
-  } else {
+  try {
     if (!req.body.Comment) {
+      throw new Error("Field is missing");
+    }
+    let postId = req.params.id;
+    let postData = await postModel.findOne({ postId: postId });
+    if (!postData) {
       resp.status(400).send({
-        Error: "Comment field is required",
+        message: "Post not found",
       });
     } else {
       let newCommentId = uuidv4();
@@ -29,6 +28,11 @@ const addComment = async (req, resp) => {
         CommentId: newCommentId,
       });
     }
+  } catch (err) {
+    console.error("Error while commenting", err);
+    resp.status(200).send({
+      message: err.message,
+    });
   }
 };
 

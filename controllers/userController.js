@@ -6,31 +6,48 @@ const userModel = require("../models/userModel");
 const followersModel = require("../models/followersModel");
 
 const login = async (req, resp) => {
-  const user = await userModel.findOne({ Email: req.body.Email });
-  if (user) {
-    if (req.body.Password === user.Password) {
-      jwt.sign(
-        { data: user },
-        process.env.ACCESS_TOKEN_SECRET,
-        (err, token) => {
-          if (err) {
-            throw err;
-          } else {
-            resp.status(200).send({
-              token: token,
-            });
-            console.log(token);
-          }
+  try {
+    if (!req.body.Email || !req.body.Password) {
+      throw new Error("Field is missing");
+    }
+    const user = await userModel.findOne({ Email: req.body.Email });
+    if (user) {
+      if (req.body.Password === user.Password) {
+        try {
+          jwt.sign(
+            { data: user },
+            process.env.ACCESS_TOKEN_SECRET,
+            (err, token) => {
+              if (err) {
+                throw err;
+              } else {
+                resp.status(200).send({
+                  token: token,
+                });
+                console.log(token);
+              }
+            }
+          );
+        } catch (err) {
+          console.error("Error signing JWT:", err);
+          resp.status(500).send({
+            message: "Internal server error",
+          });
         }
-      );
+      } else {
+        resp.status(401).send({
+          message: "Password not matched",
+        });
+      }
     } else {
-      resp.status(401).send({
-        message: "Password not matched",
+      resp.status(404).send({
+        message: "User not found",
       });
     }
-  } else {
-    resp.status(404).send({
-      message: "User not found",
+  } catch (err) {
+    console.log("Error logging in user:", err);
+    resp.status(400).send({
+      message: "Field is Missing",
     });
   }
 };

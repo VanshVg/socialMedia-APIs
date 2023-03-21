@@ -3,14 +3,13 @@ const likeModel = require("../models/likesModel");
 const { v4: uuidv4 } = require("uuid");
 
 const post = async (req, resp) => {
-  let userId = req.user.data.userId;
-  let cTime = new Date().toUTCString();
-  let newPostId = uuidv4();
-  if (!req.body.title || !req.body.description) {
-    resp.status(400).send({
-      Error: "Field is missing",
-    });
-  } else {
+  try {
+    if (!req.body.title || !req.body.description) {
+      throw new Error("Field is missing");
+    }
+    let userId = req.user.data.userId;
+    let cTime = new Date().toUTCString();
+    let newPostId = uuidv4();
     let data = new postModel({
       postId: newPostId,
       userId: userId,
@@ -25,6 +24,11 @@ const post = async (req, resp) => {
       title: req.body.title,
       description: req.body.description,
       CreatedTime: cTime,
+    });
+  } catch (err) {
+    console.log("Error uploading a post", err);
+    resp.status(400).send({
+      message: err.message,
     });
   }
 };
