@@ -1,9 +1,77 @@
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const { v4: uuidv4 } = require("uuid");
+const bcrypt = require("bcrypt");
 
 const userModel = require("../models/userModel");
 const followersModel = require("../models/followersModel");
+
+const register = async (req, resp) => {
+  try {
+    if (!req.body.Email || !req.body.Password || !req.body.userName) {
+      throw new Error("Field is missing");
+    } else {
+      let username = await userModel.findOne({ userName: req.body.userName });
+      let useremail = await userModel.findOne({ Email: req.body.Email });
+      if (username) {
+        resp.status(400).send({
+          message: "You can't use this username",
+        });
+      } else {
+        if (useremail) {
+          resp.status(400).send({
+            message: "Email already exists",
+          });
+        } else {
+          bcrypt.hash(req.body.Password, 10, async function (err, hash) {
+            let newuserId = uuidv4();
+            let data = new userModel({
+              userId: newuserId,
+              Email: req.body.Email,
+              Password: hash,
+              userName: req.body.userName,
+              Followers: 0,
+              Followings: 0,
+            });
+            let results = await data.save();
+            try {
+              jwt.sign(
+                { data: results },
+                process.env.ACCESS_TOKEN_SECRET,
+                (err, token) => {
+                  if (err) {
+                    throw err;
+                  } else {
+                    localStorage.setItem("isLoggedIn", true);
+                    resp
+                      .status(200)
+                      .cookie("token", token, {
+                        httpOnly: true,
+                        maxAge: 60 * 60 * 1000,
+                      })
+                      .send({
+                        message: "Registered Successfully",
+                      });
+                  }
+                }
+              );
+            } catch (err) {
+              console.error("Error signing JWT:", err);
+              resp.status(500).sned({
+                message: "Internal Server Error",
+              });
+            }
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.log("Error registering user:", err);
+    resp.status(400).send({
+      message: "Field is Missing",
+    });
+  }
+};
 
 const login = async (req, resp) => {
   try {
@@ -12,33 +80,46 @@ const login = async (req, resp) => {
     }
     const user = await userModel.findOne({ Email: req.body.Email });
     if (user) {
-      if (req.body.Password === user.Password) {
-        try {
-          jwt.sign(
-            { data: user },
-            process.env.ACCESS_TOKEN_SECRET,
-            (err, token) => {
-              if (err) {
-                throw err;
-              } else {
-                resp.status(200).send({
-                  token: token,
-                });
-                console.log(token);
-              }
+      bcrypt.compare(
+        req.body.Password,
+        user.Password,
+        async function (err, result) {
+          if (result === true) {
+            try {
+              jwt.sign(
+                { data: user },
+                process.env.ACCESS_TOKEN_SECRET,
+                (err, token) => {
+                  if (err) {
+                    throw err;
+                  } else {
+                    localStorage.setItem("isLoggedIn", true);
+                    resp
+                      .status(200)
+                      .cookie("token", token, {
+                        httpOnly: true,
+                        maxAge: 60 * 60 * 1000,
+                      })
+                      .send({
+                        message: "Login successful",
+                        token: token,
+                      });
+                  }
+                }
+              );
+            } catch (err) {
+              console.error("Error signing JWT:", err);
+              resp.status(500).send({
+                message: "Internal server error",
+              });
             }
-          );
-        } catch (err) {
-          console.error("Error signing JWT:", err);
-          resp.status(500).send({
-            message: "Internal server error",
-          });
+          } else {
+            resp.status(401).send({
+              message: "Password not matched",
+            });
+          }
         }
-      } else {
-        resp.status(401).send({
-          message: "Password not matched",
-        });
-      }
+      );
     } else {
       resp.status(404).send({
         message: "User not found",
@@ -152,4 +233,15 @@ const userProfile = async (req, resp) => {
   });
 };
 
-module.exports = { login, follow, unfollow, userProfile };
+const logout = async (req, resp) => {
+  resp
+    .status(200)
+    .cookie("token", "", {
+      expires: new Date(Date.now()),
+    })
+    .send({
+      message: "Logout successful",
+    });
+};
+
+module.exports = { register, login, follow, unfollow, userProfile, logout };

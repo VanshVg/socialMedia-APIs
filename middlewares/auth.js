@@ -1,20 +1,50 @@
+// const jwt = require("jsonwebtoken");
+// require("dotenv").config();
+
+// let verifyToken = async (req, resp, next) => {
+//   if (!req.headers.authorization) {
+//     resp.status(403).send({
+//       message: "Token Required",
+//     });
+//   } else {
+//     let token = req.headers.authorization.split(" ")[1];
+//     jwt.verify(
+//       token,
+//       process.env.ACCESS_TOKEN_SECRET,
+//       async function (err, decoded) {
+//         if (err) {
+//           resp.status(401).send({
+//             message: "Invalid Token",
+//           });
+//         } else {
+//           req.user = decoded;
+//           next();
+//         }
+//       }
+//     );
+//   }
+// };
+
+// module.exports = verifyToken;
+
 const jwt = require("jsonwebtoken");
+
 require("dotenv").config();
 
-let verifyToken = async (req, resp, next) => {
-  if (!req.headers.authorization) {
+let isAuthenticated = async (req, resp, next) => {
+  const { token } = req.cookies;
+  if (!token) {
     resp.status(403).send({
-      message: "Token Required",
+      message: "Login required",
     });
   } else {
-    let token = req.headers.authorization.split(" ")[1];
     jwt.verify(
       token,
       process.env.ACCESS_TOKEN_SECRET,
       async function (err, decoded) {
         if (err) {
           resp.status(401).send({
-            message: "Invalid Token",
+            message: "Invalid token",
           });
         } else {
           req.user = decoded;
@@ -25,4 +55,4 @@ let verifyToken = async (req, resp, next) => {
   }
 };
 
-module.exports = verifyToken;
+module.exports = isAuthenticated;

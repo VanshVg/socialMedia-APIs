@@ -6,6 +6,7 @@ const auth = require("../middlewares/auth");
 
 const router = express.Router();
 
+router.post("/register", userController.register);
 router.post("/authenticate", userController.login);
 router.post("/follow/:id", auth, userController.follow);
 router.post("/unfollow/:id", auth, userController.unfollow);
@@ -17,5 +18,6 @@ router.post("/unlike/:id", auth, postController.unlike);
 router.post("/comment/:id", auth, commentController.addComment);
 router.get("/posts/:id", postController.showPost);
 router.get("/all_posts", auth, postController.showAllPosts);
+router.post("/logout", userController.logout);
 
 module.exports = router;
